@@ -1,46 +1,54 @@
-# Getting Started with Create React App
+# sample-inline-form-recoil
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+サーバーから一つのエンドポイントで取得したプロフィールの各項目を、Recoilでデータ管理をして独立したインラインフォームで更新するサンプルです。
 
-## Available Scripts
+## 背景
 
-In the project directory, you can run:
+サーバーからは、プロフィール取得APIと、プロフィールの更新APIが公開されている状況を想定しており、json-serverでモックしています.
+そういった状況で、プロフィールの取得をAPIから実施して、各フィールドをインラインフォームで更新するUIを想定しています。
 
-### `yarn start`
+## 実装
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+インラインフォームとしては、複数のフォームを編集した後に順番にサブミットされた場合にも動くように、
+どれか1つをサブミットしても他のフィールドの編集状況はキープされてほしいです。
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+また、個別のフィールドで独立してプロフィール取得APIを叩くようにしてしまうと、
+ページのロード時のサーバーとの通信回数がフィールド数に比例して増えてしまうのでそれも避けたいです。
 
-### `yarn test`
+![スクリーンショット 2021-06-27 22 15 29](https://user-images.githubusercontent.com/236528/123545867-46089a80-d795-11eb-987f-33c7dfc5d106.png)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+プロフィール取得をRecoilの[useRecoilValueLoadable](https://recoiljs.org/docs/api-reference/core/useRecoilValueLoadable/)で単純に実施すると、
+サーバーにサブミットする度に、インラインフォームがDOMから外されてしまって編集内容が失なわれてしまいます。
+そこで
 
-### `yarn build`
+- loadableの結果をuseStateにキャッシュする
+- Suspenseを利用してfallbackし、DOMから取りのぞかれるのではなくdisplay: noneにされるようにする
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+のどちらかの方式を採用すると動かせそうでした。
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```ts
+export const useCachedRecoilValueLoadableSelector = <S, T>(loadable: Loadable<S>, fn: (arg0: S) => T) => {
+  const [value, setValue] = useState<T | undefined>(undefined);
+  useEffect(() => {
+    if (loadable.state === "hasValue") {
+      setValue(fn(loadable.contents));
+    }
+  }, [loadable.state, loadable.contents, fn]);
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+  return value;
+};
+```
 
-### `yarn eject`
+## Usage
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+まずAPIのモックのjson-serverをポート3001番で起動します。
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+yarn start-json-server
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+次に、Reactのアプリを起動します
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+yarn start
+```

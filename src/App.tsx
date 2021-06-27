@@ -18,6 +18,7 @@ function App() {
       <Router>
         <div>
           <nav>
+            <h1>Not working</h1>
             <ul>
               <li>
                 <Link to="/single">Single</Link>
@@ -25,6 +26,9 @@ function App() {
               <li>
                 <Link to="/separate">Separate</Link>
               </li>
+            </ul>
+            <h1>Correctly working</h1>
+            <ul>
               <li>
                 <Link to="/cached">Cached</Link>
               </li>

@@ -1,49 +1,37 @@
 import React, { Fragment } from 'react';
 import { useCallback } from 'react';
-import { atom, selector, useRecoilValueLoadable, useSetRecoilState } from 'recoil';
+import { atom, selector, useRecoilValueLoadable } from 'recoil';
 import './App.css';
 import { InlineForm } from './InlineForm';
+import { useSetInvalidateRecoilValue } from './utils';
+import { getProfile, updateEmail, updateName } from './api';
 
 const requestIDState = atom({
   key: 'SeparateRequestID',
   default: 0,
 });
 
-const userName = atom({
-  key: 'SeparateUserName',
-  default: '田中太郎'
-});
-
-const userEmail = atom({
-  key: 'SeparateUserEmail',
-  default: 'sample@example.com'
-});
-
 const userProfile = selector({
   key: 'SeparateUserProfile',
   get: async ({get}) => {
     get(requestIDState);
-    const name = get(userName);
-    const email = get(userEmail);
-    console.log("SeparateUserProfile reload");
-    return {
-      name: name,
-      email: email,
-    };
+    const profile = await getProfile()
+    return profile;
   },
 });
 
 export default function SeparateLoadForms() {
-  const setUserName = useSetRecoilState(userName);
-  const setUserEmail = useSetRecoilState(userEmail);
+  const invalidate = useSetInvalidateRecoilValue(requestIDState);
 
   const handleSubmitName = useCallback((name: string) => {
-    setUserName(name);
-  },[setUserName]);
+    updateName(name)
+    invalidate();
+  },[invalidate]);
 
   const handleSubmitEmail = useCallback((email: string) => {
-    setUserEmail(email);
-  },[setUserEmail]);
+    updateEmail(email)
+    invalidate();
+  },[invalidate]);
 
   const loadable = useRecoilValueLoadable(userProfile);
 

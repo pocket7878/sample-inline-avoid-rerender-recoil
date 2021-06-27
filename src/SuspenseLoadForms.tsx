@@ -3,20 +3,12 @@ import { useCallback } from 'react';
 import { atom, selector, useRecoilValue, useSetRecoilState } from 'recoil';
 import './App.css';
 import { InlineForm } from './InlineForm';
+import { useSetInvalidateRecoilValue } from './utils';
+import { getProfile, updateEmail, updateName } from './api';
 
 const requestIDState = atom({
   key: 'SuspenseLoadRequestID',
   default: 0,
-});
-
-const userName = atom({
-  key: 'SuspenseLoadUserName',
-  default: '田中太郎'
-});
-
-const userEmail = atom({
-  key: 'SuspenseLoadUserEmail',
-  default: 'sample@example.com'
 });
 
 function sleep(ms: number) {
@@ -28,18 +20,12 @@ const userProfile = selector({
   get: async ({get}) => {
     await sleep(1000);
     get(requestIDState);
-    const name = get(userName);
-    const email = get(userEmail);
-    console.log("SuspenseLoadUserProfile reload");
-    return {
-      name: name,
-      email: email,
-    };
+    const profile = await getProfile()
+    return profile;
   },
 });
 
 export default function SuspenseLoadForms() {
-
   return (
     <Fragment>
       <h1>Suspense loadable</h1>
@@ -55,16 +41,17 @@ function Fallback() {
 }
 
 const Component = memo(function Component() {
-  const setUserName = useSetRecoilState(userName);
-  const setUserEmail = useSetRecoilState(userEmail);
+  const invalidate = useSetInvalidateRecoilValue(requestIDState);
 
   const handleSubmitName = useCallback((name: string) => {
-    setUserName(name);
-  },[setUserName]);
+    updateName(name)
+    invalidate();
+  },[invalidate]);
 
   const handleSubmitEmail = useCallback((email: string) => {
-    setUserEmail(email);
-  },[setUserEmail]);
+    updateEmail(email)
+    invalidate();
+  },[invalidate]);
 
   const driverProfile = useRecoilValue(userProfile);
   
